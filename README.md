@@ -1,12 +1,29 @@
 # VM Console — Gestor de máquinas virtuales (Frontend)
 
-SPA en **Angular 21** para administrar VMs frente a un backend reactivo (p. ej. Spring WebFlux). Incluye **autenticación con cookies HttpOnly**, **estado con Signals**, **UI optimista**, **WebSocket en tiempo real**, **Material 3** y **pruebas unitarias con Vitest**.
+SPA en **Angular 21** para administrar máquinas virtuales frente a un API REST y WebSocket (p. ej. Spring WebFlux). Incluye **autenticación con cookies HttpOnly**, **estado con Angular Signals**, **UI optimista**, **actualización en tiempo real por WebSocket**, **Angular Material 3** y **pruebas unitarias con Vitest**.
+
+## Tabla de contenidos
+
+1. [Estructura de carpetas](#estructura-de-carpetas)
+2. [Requisitos y arranque](#requisitos-y-arranque)
+3. [Scripts útiles](#scripts-útiles)
+4. [Pruebas unitarias](#pruebas-unitarias)
+5. [Stack técnico](#stack-técnico)
+6. [Arquitectura y decisiones](#arquitectura-y-decisiones)
+7. [Estado (Signals)](#estado-signals)
+8. [UI optimista](#ui-optimista)
+9. [Autenticación HttpOnly](#autenticación-httponly)
+10. [WebSocket](#websocket)
+11. [Rutas, guards y lazy loading](#rutas-guards-y-lazy-loading)
+12. [UI, temas y validación](#ui-temas-y-validación)
+13. [Roles ADMIN / CLIENT](#roles-admin--client)
+14. [Contrato API (resumen)](#contrato-api-resumen)
 
 ---
 
 ## Estructura de carpetas
 
-La organización sigue **Clean Architecture / feature-based**: lo que es transversal al producto vive en **`core/`** y **`shared/`**; lo que es pantalla de negocio en **`features/`**; el marco autenticado en **`layout/`**; el estado global en **`store/`**. Así se puede explicar el repo en una sola diapositiva y ubicar cualquier cambio en segundos.
+La organización sigue un enfoque **Clean Architecture / por features**: lo transversal al producto está en **`core/`** y **`shared/`**; las pantallas de negocio en **`features/`**; el marco de la zona autenticada en **`layout/`**; el estado global en **`store/`**. Esto reduce acoplamiento y facilita localizar cambios por responsabilidad.
 
 ### Árbol principal (`src/`)
 
@@ -79,7 +96,7 @@ package.json
 | **`core/`** | HTTP, seguridad, modelos, reglas de transporte | Importar desde `features/*` |
 | **`store/`** | Estado y comandos que orquestan servicios | Contener plantillas HTML de página |
 | **`features/`** | Páginas y rutas de un flujo de usuario | Duplicar lógica que ya está en `core` |
-| **`shared/`** | Componentes/pipes presentacionales | Conocer rutas o stores salvo inputs |
+| **`shared/`** | Componentes y pipes de UI reutilizables | Conocer rutas o stores salvo inputs |
 | **`layout/`** | Composición del shell (navegación global) | Sustituir a `features` en lógica de negocio |
 
 ### Convenciones rápidas
@@ -90,45 +107,37 @@ package.json
 
 ---
 
-## Tabla de contenidos
-
-1. [Estructura de carpetas](#estructura-de-carpetas) — mapa del repo (arriba)
-2. [Requisitos y arranque](#requisitos-y-arranque)
-3. [Scripts útiles](#scripts-útiles)
-4. [Pruebas unitarias](#pruebas-unitarias)
-5. [Cómo presentar el proyecto (guía)](#cómo-presentar-el-proyecto-guía)
-6. [Stack técnico](#stack-técnico)
-7. [Arquitectura y decisiones](#arquitectura-y-decisiones)
-8. [Estado (Signals)](#estado-signals)
-9. [UI optimista](#ui-optimista)
-10. [Autenticación HttpOnly](#autenticación-httponly)
-11. [WebSocket](#websocket)
-12. [Rutas, guards y lazy loading](#rutas-guards-y-lazy-loading)
-13. [UI, temas y validación](#ui-temas-y-validación)
-14. [Roles ADMIN / CLIENT](#roles-admin--client)
-15. [Contrato API (resumen)](#contrato-api-resumen)
-
----
-
 ## Requisitos y arranque
 
 | Requisito | Versión / nota |
 |-----------|------------------|
 | Node.js | 20+ |
 | npm | 10+ |
-| Backend | `http://localhost:8080` (CORS con credenciales hacia `http://localhost:4200`) |
+| Backend | API en `http://localhost:8080` (el front asume esta URL; configurable en `src/app/core/config/app.config.ts`) |
+| CORS | El backend debe permitir el origen del front (`http://localhost:4200` en desarrollo) con **`Access-Control-Allow-Credentials: true`** y un **`Access-Control-Allow-Origin`** explícito (no `*`) para que las cookies HttpOnly se envíen en las peticiones. |
+
+### Ejecutar la aplicación en local
+
+1. Arranca el backend en el puerto **8080** (o ajusta `apiBaseUrl` / WebSocket en `app.config.ts` del front).
+2. En la raíz del front:
 
 ```bash
 npm install
 npm start          # http://localhost:4200
 ```
 
-**Cuentas de demo** (también en chips en la pantalla de login):
+3. Abre el navegador en `http://localhost:4200`, inicia sesión y navega por **Dashboard** y **Máquinas virtuales**.
+
+### Cuentas de referencia (según contrato del backend)
+
+La pantalla de login incluye accesos rápidos con estos datos. Úsalos solo si el backend los tiene sembrados.
 
 | Rol    | Email              | Contraseña |
 |--------|--------------------|------------|
 | ADMIN  | admin@test.com     | 123456     |
 | CLIENT | client@test.com   | client123  |
+
+### Build
 
 ```bash
 npm run build      # producción → dist/vm-manager
@@ -175,18 +184,7 @@ Los ficheros `*.spec.ts` siguen al código bajo `src/app/`:
 | **Layout** | `shell`, `sidebar`, `topbar` |
 | **Shared** | `vm-card`, `stat-card`, `confirm-dialog`, `empty-state`, `skeleton`, `loading-spinner`, `vm-status-badge`, pipes |
 
-Las pruebas permiten demostrar en una entrevista o revisión que la **lógica sensible** (guards, stores, interceptors, parseo de API) está verificada sin depender siempre del backend en vivo.
-
----
-
-## Cómo presentar el proyecto (guía)
-
-1. **Mapa del repo (~30 s):** Abre [Estructura de carpetas](#estructura-de-carpetas): `core` → `store` → `features` → `layout` → `shared`.
-2. **Seguridad (~45 s):** Cookie HttpOnly, `withCredentials`, rol CLIENT sin botones de mutación.
-3. **Estado (~45 s):** `auth.store` / `vm.store`, Signals y comandos que llaman a servicios.
-4. **Optimistic UI (~60 s):** Crear o editar VM; rollback si falla la API.
-5. **Tiempo real (~30 s):** WebSocket y `VmStore.applyServerEvent`.
-6. **Calidad (~30 s):** `npm run test:ci` o recorrido de `*.spec.ts` y `vitest.config.ts`.
+Las pruebas cubren sobre todo **guards**, **interceptors**, **stores**, **servicios** y **parseo de respuestas API**, de forma que el CI pueda validar regresiones sin levantar el backend en cada paso.
 
 ---
 
@@ -206,12 +204,12 @@ Las pruebas permiten demostrar en una entrevista o revisión que la **lógica se
 
 ## Arquitectura y decisiones
 
-Resumen; el **desglose de carpetas y convenciones** está en [Estructura de carpetas](#estructura-de-carpetas).
+El detalle de **carpetas y convenciones** está en [Estructura de carpetas](#estructura-de-carpetas).
 
 - **Core** no depende de **features**; encapsula API, seguridad y modelos.
 - **Store** orquesta lecturas/escrituras y expone señales de solo lectura donde aplica.
 - **Features** son contenedores/páginas que consumen stores y servicios.
-- **Shared** son piezas UI presentacionales reutilizables.
+- **Shared** agrupa componentes y pipes de UI reutilizables, sin lógica de negocio.
 - **Lazy loading** de rutas y componentes para reducir el bundle inicial.
 - **`withComponentInputBinding()`** en el router para inputs tipados desde rutas.
 
@@ -303,4 +301,4 @@ Base: **`http://localhost:8080`** (ver `src/app/core/config/app.config.ts`).
 
 ## Licencia y créditos
 
-Yeison Rua - prueba técnica — **VM Console**: Angular · Signals · Material 3 · Vitest.
+**VM Console** — Yeison Rua. Stack: Angular, Signals, Material 3, Vitest.
