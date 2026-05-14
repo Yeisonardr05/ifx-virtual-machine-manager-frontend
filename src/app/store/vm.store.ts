@@ -1,7 +1,7 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { Observable, catchError, finalize, take, tap, throwError } from 'rxjs';
 
-import { CreateVmPayload, UpdateVmPayload, VirtualMachine } from '../core/models/vm.model';
+import { CreateVmPayload, UpdateVmPayload, VirtualMachine, VmUpdateRequestBody } from '../core/models/vm.model';
 import { VmEvent } from '../core/models/websocket-event.model';
 import { NotificationService } from '../core/services/notification.service';
 import { VmService } from '../core/services/vm.service';
@@ -152,6 +152,7 @@ export class VmStore {
     const optimistic: VirtualMachine = {
       id: tempId,
       ...payload,
+      status: 'STOPPED',
       createdAt: now,
       updatedAt: now,
     };
@@ -182,16 +183,25 @@ export class VmStore {
       return throwError(() => new Error('VM not found'));
     }
 
+    const merged: VmUpdateRequestBody = {
+      name: payload.name ?? previous.name,
+      cores: payload.cores ?? previous.cores,
+      ram: payload.ram ?? previous.ram,
+      disk: payload.disk ?? previous.disk,
+      os: payload.os ?? previous.os,
+      status: payload.status ?? previous.status,
+    };
+
     const optimistic: VirtualMachine = {
       ...previous,
-      ...payload,
+      ...merged,
       updatedAt: new Date().toISOString(),
     };
 
     this._vms.update((list) => list.map((vm) => (vm.id === id ? optimistic : vm)));
     this.flashHighlight(id);
 
-    return this.vmService.update(id, payload).pipe(
+    return this.vmService.update(id, merged).pipe(
       tap((updated) => {
         this._vms.update((list) =>
           list.map((vm) => (vm.id === id ? updated : vm)),

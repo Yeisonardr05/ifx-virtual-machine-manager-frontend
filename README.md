@@ -298,13 +298,13 @@ configuration.
 
 - `LoginPage` — typed form with `email`, `password`. Validators: `required`, `email`,
   `minLength(6)`. Field-level errors update on touch.
-- `VmFormPage` — typed form with all VM fields and constraints from the spec:
-  - `name`: required, min 3, max 40
-  - `os`: required (from the curated OS list)
-  - `status`: required
-  - `cores`: required, min **1**, max 64
-  - `ram`: required, min **1**, max 1024 (GB)
-  - `disk`: required, min **10**, max 10000 (GB)
+- `VmFormPage` — typed form with all VM fields and constraints aligned with the backend:
+  - `name`: required, min **2**, max **100** characters
+  - `os`: required (curated list), max **100** characters
+  - `status`: edit only — required, pattern **RUNNING \| STOPPED \| PAUSED** (create omits `status`; API defaults to STOPPED)
+  - `cores`: required, min **1** (no upper bound in API contract)
+  - `ram`: required, min **1**, max **64** (GB)
+  - `disk`: required, min **1** GB (no upper bound in API contract)
 
 Helper methods (`errorOf(...)`, `emailError()`, `passwordError()`) translate validator
 errors into user-friendly copy that renders inside the Material `<mat-error>` slots.
@@ -351,8 +351,8 @@ Base URL — `http://localhost:8080` (configurable in
 | POST   | `/logout`      | —                                    | Clears HttpOnly cookie                          |
 | GET    | `/vms`         | —                                    | Returns `VirtualMachine[]`                      |
 | GET    | `/vms/{id}`    | —                                    | Returns one `VirtualMachine`                    |
-| POST   | `/vms`         | `CreateVmPayload`                    | Returns the created `VirtualMachine`            |
-| PUT    | `/vms/{id}`    | `UpdateVmPayload`                    | Returns the updated `VirtualMachine`            |
+| POST   | `/vms`         | `CreateVmPayload` (no `status`; server defaults to STOPPED) | Returns the created `VirtualMachine`            |
+| PUT    | `/vms/{id}`    | Full update body (`name`, `os`, `status`, `cores`, `ram`, `disk`); UI may send partial `UpdateVmPayload` — the store merges with the current VM before PUT | Returns the updated `VirtualMachine`            |
 | DELETE | `/vms/{id}`    | —                                    | 204 / void                                      |
 | WS     | `ws(s)://<host>/ws/vms` (native JSON) | —                          | Pushes `{ event, data }` (`VmEvent`) in real time |
 

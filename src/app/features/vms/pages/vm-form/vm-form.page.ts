@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -10,7 +10,11 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { OPERATING_SYSTEMS } from '../../../../core/constants/operating-systems';
 import { VM_STATUS_OPTIONS } from '../../../../core/constants/vm-status';
-import { CreateVmPayload, VirtualMachine } from '../../../../core/models/vm.model';
+import {
+  CreateVmPayload,
+  UpdateVmPayload,
+  VirtualMachine,
+} from '../../../../core/models/vm.model';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
 import { VmStore } from '../../../../store/vm.store';
 
@@ -48,19 +52,10 @@ export class VmFormPage {
   readonly pageSubtitle = computed(() =>
     this.isEdit()
       ? 'Update the configuration of an existing virtual machine.'
-      : 'Provision a new VM with the resources you need.',
+      : 'Provision a new VM with the resources you need. New VMs start as STOPPED on the server.',
   );
 
-  readonly form = this.fb.nonNullable.group({
-    name: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(40)]],
-    os: ['Ubuntu 22.04', [Validators.required]],
-    status: this.fb.nonNullable.control<VirtualMachine['status']>('STOPPED', {
-      validators: [Validators.required],
-    }),
-    cores: [2, [Validators.required, Validators.min(1), Validators.max(64)]],
-    ram: [4, [Validators.required, Validators.min(1), Validators.max(1024)]],
-    disk: [40, [Validators.required, Validators.min(10), Validators.max(10000)]],
-  });
+  readonly form: FormGroup = this.createForm();
 
   constructor() {
     const id = this.editingId();
@@ -70,38 +65,72 @@ export class VmFormPage {
   }
 
   submit(): void {
-    if (this.form.invalid || this.submitting()) {
+    if (this.submitting()) {
+      return;
+    }
+
+    this.form.controls['name'].setValue(String(this.form.controls['name'].value).trim());
+
+    if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
 
-    const value = this.form.getRawValue();
-    const payload: CreateVmPayload = {
-      name: value.name.trim(),
-      os: value.os,
-      status: value.status,
-      cores: value.cores,
-      ram: value.ram,
-      disk: value.disk,
-    };
-
+    const id = this.editingId();
     this.submitting.set(true);
 
-    const id = this.editingId();
-    const action$ = id !== null ? this.vmStore.updateVm(id, payload) : this.vmStore.createVm(payload);
-
-    action$.subscribe({
-      next: () => {
-        this.submitting.set(false);
-        this.router.navigate(['/vms']);
-      },
-      error: () => this.submitting.set(false),
-    });
+    if (id !== null) {
+      const value = this.form.getRawValue() as {
+        name: string;
+        os: string;
+        status: VirtualMachine['status'];
+        cores: number;
+        ram: number;
+        disk: number;
+      };
+      const payload: UpdateVmPayload = {
+        name: value.name,
+        os: value.os,
+        status: value.status,
+        cores: value.cores,
+        ram: value.ram,
+        disk: value.disk,
+      };
+      this.vmStore.updateVm(id, payload).subscribe({
+        next: () => {
+          this.submitting.set(false);
+          this.router.navigate(['/vms']);
+        },
+        error: () => this.submitting.set(false),
+      });
+    } else {
+      const value = this.form.getRawValue() as {
+        name: string;
+        os: string;
+        cores: number;
+        ram: number;
+        disk: number;
+      };
+      const payload: CreateVmPayload = {
+        name: value.name,
+        os: value.os,
+        cores: value.cores,
+        ram: value.ram,
+        disk: value.disk,
+      };
+      this.vmStore.createVm(payload).subscribe({
+        next: () => {
+          this.submitting.set(false);
+          this.router.navigate(['/vms']);
+        },
+        error: () => this.submitting.set(false),
+      });
+    }
   }
 
-  errorOf(controlName: keyof typeof this.form.controls): string | null {
-    const control = this.form.controls[controlName];
-    if (!control.touched || control.valid) {
+  errorOf(controlName: string): string | null {
+    const control = this.form.get(controlName);
+    if (!control || !control.touched || control.valid) {
       return null;
     }
     if (control.hasError('required')) return 'This field is required';
@@ -121,7 +150,39 @@ export class VmFormPage {
       const max = control.errors?.['max'].max as number;
       return `Must be less than or equal to ${max}`;
     }
+    if (control.hasError('pattern')) {
+      return 'Must be RUNNING, STOPPED or PAUSED';
+    }
     return 'Invalid value';
+  }
+
+  private createForm(): FormGroup {
+    const name = ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]];
+    const os = ['Ubuntu 22.04', [Validators.required, Validators.maxLength(100)]];
+    const cores = [2, [Validators.required, Validators.min(1)]];
+    const ram = [4, [Validators.required, Validators.min(1), Validators.max(64)]];
+    const disk = [40, [Validators.required, Validators.min(1)]];
+
+    if (this.editingId() !== null) {
+      return this.fb.nonNullable.group({
+        name,
+        os,
+        status: this.fb.nonNullable.control<VirtualMachine['status']>('STOPPED', {
+          validators: [Validators.required, Validators.pattern(/^(RUNNING|STOPPED|PAUSED)$/)],
+        }),
+        cores,
+        ram,
+        disk,
+      });
+    }
+
+    return this.fb.nonNullable.group({
+      name,
+      os,
+      cores,
+      ram,
+      disk,
+    });
   }
 
   private parseIdFromRoute(): number | null {
@@ -145,7 +206,6 @@ export class VmFormPage {
         disk: vm.disk,
       });
     } else {
-      // If the store hasn't loaded yet, defer hydration with a microtask.
       queueMicrotask(() => {
         const refreshed = this.vmStore.vms().find((entry) => entry.id === id);
         if (refreshed) {

@@ -5,7 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { Router, RouterLink } from '@angular/router';
 import { filter } from 'rxjs/operators';
 
-import { VirtualMachine } from '../../../../core/models/vm.model';
+import { VirtualMachine, VmStatus } from '../../../../core/models/vm.model';
 import {
   ConfirmDialogComponent,
   ConfirmDialogData,
@@ -43,6 +43,10 @@ export class VmListPage {
 
   onEdit(vm: VirtualMachine): void {
     this.router.navigate(['/vms/edit', vm.id]);
+  }
+
+  onStatusChange(event: { vm: VirtualMachine; status: VmStatus }): void {
+    this.vmStore.updateVm(event.vm.id, { status: event.status }).subscribe({ error: () => undefined });
   }
 
   onRemove(vm: VirtualMachine): void {

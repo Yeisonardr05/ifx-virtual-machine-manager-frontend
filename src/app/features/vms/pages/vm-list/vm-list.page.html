@@ -86,6 +86,7 @@
           [highlighted]="vmStore.highlightedId() === vm.id"
           (edit)="onEdit($event)"
           (remove)="onRemove($event)"
+          (statusChange)="onStatusChange($event)"
         />
       }
     </div>

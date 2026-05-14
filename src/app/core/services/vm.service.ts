@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { APP_CONFIG } from '../config/app.config';
-import { CreateVmPayload, UpdateVmPayload, VirtualMachine } from '../models/vm.model';
+import { CreateVmPayload, VirtualMachine, VmUpdateRequestBody } from '../models/vm.model';
 import { unwrapVm, unwrapVmList } from '../utils/vm-api-response';
 
 @Injectable({ providedIn: 'root' })
@@ -30,9 +30,9 @@ export class VmService {
       .pipe(map((body) => unwrapVm(body)));
   }
 
-  update(id: number, payload: UpdateVmPayload): Observable<VirtualMachine> {
+  update(id: number, body: VmUpdateRequestBody): Observable<VirtualMachine> {
     return this.http
-      .put<unknown>(`${this.baseUrl}/${id}`, payload)
+      .put<unknown>(`${this.baseUrl}/${id}`, body)
       .pipe(map((body) => unwrapVm(body)));
   }
 

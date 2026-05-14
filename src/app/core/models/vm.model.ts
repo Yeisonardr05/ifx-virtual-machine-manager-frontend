@@ -12,6 +12,10 @@ export interface VirtualMachine {
   updatedAt: string;
 }
 
-export type CreateVmPayload = Omit<VirtualMachine, 'id' | 'createdAt' | 'updatedAt'>;
+export type CreateVmPayload = Omit<VirtualMachine, 'id' | 'createdAt' | 'updatedAt' | 'status'>;
 
-export type UpdateVmPayload = Partial<CreateVmPayload>;
+/** Partial changes from UI; {@link VmStore.updateVm} merges onto the current row before PUT. */
+export type UpdateVmPayload = Partial<Omit<VirtualMachine, 'id' | 'createdAt' | 'updatedAt'>>;
+
+/** Full VM fields required by the backend on `PUT /vms/{id}`. */
+export type VmUpdateRequestBody = Omit<VirtualMachine, 'id' | 'createdAt' | 'updatedAt'>;

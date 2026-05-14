@@ -5,7 +5,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
-import { VirtualMachine } from '../../../core/models/vm.model';
+import { VirtualMachine, VmStatus } from '../../../core/models/vm.model';
+import { VM_STATUS_META, VM_STATUS_OPTIONS } from '../../../core/constants/vm-status';
 import { RelativeTimePipe } from '../../pipes/relative-time.pipe';
 import { StorageSizePipe } from '../../pipes/storage-size.pipe';
 import { VmStatusBadgeComponent } from '../vm-status-badge/vm-status-badge.component';
@@ -38,7 +39,31 @@ import { VmStatusBadgeComponent } from '../vm-status-badge/vm-status-badge.compo
         </div>
 
         <div class="vm-card__actions">
-          <app-vm-status-badge [status]="vm().status" />
+          @if (canManage() && vm().id > 0) {
+            <button
+              type="button"
+              class="vm-card__status-trigger"
+              [matMenuTriggerFor]="statusMenu"
+              [attr.aria-label]="'Change status, currently ' + vm().status"
+            >
+              <app-vm-status-badge [status]="vm().status" />
+            </button>
+            <mat-menu #statusMenu="matMenu" class="vm-card__status-menu">
+              @for (opt of statusPickOptions; track opt.value) {
+                <button
+                  mat-menu-item
+                  type="button"
+                  [disabled]="opt.value === vm().status"
+                  (click)="pickStatus(opt.value)"
+                >
+                  <mat-icon>{{ statusIcon(opt.value) }}</mat-icon>
+                  <span>Set to {{ opt.label }}</span>
+                </button>
+              }
+            </mat-menu>
+          } @else {
+            <app-vm-status-badge [status]="vm().status" />
+          }
           @if (canManage()) {
             <button
               mat-icon-button
@@ -105,8 +130,23 @@ export class VmCardComponent {
   readonly canManage = input<boolean>(false);
   readonly highlighted = input<boolean>(false);
 
+  /** Status choices for the quick-change menu (same values as the edit form). */
+  readonly statusPickOptions = VM_STATUS_OPTIONS;
+
   readonly edit = output<VirtualMachine>();
   readonly remove = output<VirtualMachine>();
+  readonly statusChange = output<{ vm: VirtualMachine; status: VmStatus }>();
+
+  pickStatus(status: VmStatus): void {
+    if (status === this.vm().status) {
+      return;
+    }
+    this.statusChange.emit({ vm: this.vm(), status });
+  }
+
+  statusIcon(status: VmStatus): string {
+    return VM_STATUS_META[status].icon;
+  }
 
   displayId(): string {
     const id = this.vm().id;

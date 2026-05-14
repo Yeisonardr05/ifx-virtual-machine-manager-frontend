@@ -21,9 +21,9 @@
       <div class="vm-form__grid">
         <mat-form-field appearance="outline" class="span-2">
           <mat-label>Name</mat-label>
-          <input matInput formControlName="name" placeholder="e.g. prod-web-01" maxlength="40" />
+          <input matInput formControlName="name" placeholder="e.g. prod-web-01" maxlength="100" />
           <mat-icon matSuffix>label</mat-icon>
-          <mat-hint align="end">{{ form.controls.name.value.length }}/40</mat-hint>
+          <mat-hint align="end">{{ (form.get('name')?.value ?? '').length }}/100</mat-hint>
           @if (errorOf('name')) {
             <mat-error>{{ errorOf('name') }}</mat-error>
           }
@@ -44,17 +44,19 @@
           }
         </mat-form-field>
 
-        <mat-form-field appearance="outline">
-          <mat-label>Status</mat-label>
-          <mat-select formControlName="status">
-            @for (option of statusOptions; track option.value) {
-              <mat-option [value]="option.value">{{ option.label }}</mat-option>
+        @if (isEdit()) {
+          <mat-form-field appearance="outline">
+            <mat-label>Status</mat-label>
+            <mat-select formControlName="status">
+              @for (option of statusOptions; track option.value) {
+                <mat-option [value]="option.value">{{ option.label }}</mat-option>
+              }
+            </mat-select>
+            @if (errorOf('status')) {
+              <mat-error>{{ errorOf('status') }}</mat-error>
             }
-          </mat-select>
-          @if (errorOf('status')) {
-            <mat-error>{{ errorOf('status') }}</mat-error>
-          }
-        </mat-form-field>
+          </mat-form-field>
+        }
       </div>
     </div>
 
@@ -70,7 +72,6 @@
             type="number"
             formControlName="cores"
             min="1"
-            max="64"
             inputmode="numeric"
           />
           <span matSuffix class="suffix">cores</span>
@@ -86,7 +87,7 @@
             type="number"
             formControlName="ram"
             min="1"
-            max="1024"
+            max="64"
             inputmode="numeric"
           />
           <span matSuffix class="suffix">GB</span>
@@ -101,8 +102,7 @@
             matInput
             type="number"
             formControlName="disk"
-            min="10"
-            max="10000"
+            min="1"
             inputmode="numeric"
           />
           <span matSuffix class="suffix">GB</span>
