@@ -1,17 +1,53 @@
-# See https://docs.github.com/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+# https://docs.github.com/get-started/git-basics/ignoring-files
 
-# Compiled output
+# =============================================================================
+# Dependencies
+# =============================================================================
+/node_modules
+
+# =============================================================================
+# Build & compiled output
+# =============================================================================
 /dist
 /tmp
 /out-tsc
 /bazel-out
+*.tsbuildinfo
 
-# Node
-/node_modules
-npm-debug.log
-yarn-error.log
+# =============================================================================
+# Tests & coverage
+# =============================================================================
+/coverage
+*.lcov
 
-# IDEs and editors
+# =============================================================================
+# Angular & frontend tooling cache
+# =============================================================================
+/.angular/cache
+.sass-cache/
+/.eslintcache
+
+# =============================================================================
+# Logs & debug
+# =============================================================================
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+/libpeerconnection.log
+testem.log
+
+# =============================================================================
+# Environment & local secrets (uncomment if you add real env files)
+# =============================================================================
+# .env
+# .env.local
+# .env.*.local
+
+# =============================================================================
+# IDEs & editors
+# =============================================================================
 .idea/
 .project
 .classpath
@@ -20,24 +56,23 @@ yarn-error.log
 .settings/
 *.sublime-workspace
 
-# Visual Studio Code
+# Visual Studio Code — ignore all except shared workspace settings
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
-.history/*
+.history/
 
-# Miscellaneous
-/.angular/cache
-.sass-cache/
-/connect.lock
-/coverage
-/libpeerconnection.log
-testem.log
-/typings
-__screenshots__/
-
-# System files
+# =============================================================================
+# OS & filesystem
+# =============================================================================
 .DS_Store
 Thumbs.db
+
+# =============================================================================
+# Miscellaneous
+# =============================================================================
+/connect.lock
+/typings
+__screenshots__/

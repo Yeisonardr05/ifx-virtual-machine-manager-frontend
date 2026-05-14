@@ -1,398 +1,306 @@
-# VM Console — Virtual Machine Manager (Frontend)
+# VM Console — Gestor de máquinas virtuales (Frontend)
 
-A premium, production-grade **Angular 21** single-page application for managing virtual
-machines. Built on **standalone components**, **Angular Signals**, **RxJS**, **native
-WebSockets**, and **Angular Material 3**, it consumes a reactive **Spring**-style
-backend that authenticates via **HttpOnly cookies**.
-
-The UI was designed to feel like a real SaaS cloud console (Vercel / DigitalOcean / AWS
-inspired), with native **dark + light mode**, **glassmorphism**, smooth animations,
-**optimistic UI**, real-time updates, and a fully responsive layout.
+SPA en **Angular 21** para administrar VMs frente a un backend reactivo (p. ej. Spring WebFlux). Incluye **autenticación con cookies HttpOnly**, **estado con Signals**, **UI optimista**, **WebSocket en tiempo real**, **Material 3** y **pruebas unitarias con Vitest**.
 
 ---
 
-## Table of Contents
+## Estructura de carpetas
 
-1. [Quick start](#quick-start)
-2. [Tech stack](#tech-stack)
-3. [Project structure](#project-structure)
-4. [Architecture & technical decisions](#architecture--technical-decisions)
-5. [State management with Signals](#state-management-with-signals)
-6. [Optimistic UI](#optimistic-ui)
-7. [HttpOnly cookie authentication](#httponly-cookie-authentication)
-8. [WebSocket flow (native JSON)](#websocket-flow-native-json)
-9. [Routing, guards & lazy loading](#routing-guards--lazy-loading)
-10. [Theming, dark mode & UI system](#theming-dark-mode--ui-system)
-11. [Validation & error handling](#validation--error-handling)
-12. [Roles & permissions (ADMIN vs CLIENT)](#roles--permissions-admin-vs-client)
-13. [Backend contract](#backend-contract)
-14. [Available scripts](#available-scripts)
+La organización sigue **Clean Architecture / feature-based**: lo que es transversal al producto vive en **`core/`** y **`shared/`**; lo que es pantalla de negocio en **`features/`**; el marco autenticado en **`layout/`**; el estado global en **`store/`**. Así se puede explicar el repo en una sola diapositiva y ubicar cualquier cambio en segundos.
 
----
-
-## Quick start
-
-### Prerequisites
-- Node.js **20+**
-- npm **10+** (or pnpm)
-- A running Spring Boot backend exposed at `http://localhost:8080`
-
-### Install & run
-
-```bash
-npm install
-npm start              # http://localhost:4200
-```
-
-### Build
-
-```bash
-npm run build                              # production build
-npm run watch                              # incremental dev build
-```
-
-### Demo accounts
-
-| Role   | Email             | Password   |
-|--------|-------------------|------------|
-| ADMIN  | admin@test.com    | 123456     |
-| CLIENT | client@test.com   | client123  |
-
-The login page exposes one-click chips that pre-fill these credentials.
-
----
-
-## Tech stack
-
-- **Angular 21** (Zone.js change detection for stable Router/Material; Signals remain the state layer) — standalone components, `inject()`, new
-  control flow (`@if`, `@for`, `@switch`)
-- **Angular Signals** — `signal`, `computed`, `effect`, `linkedSignal`-friendly stores
-- **RxJS 7** — HTTP, WebSocket bridge, optimistic-UI rollback flows
-- **Angular Material 3** + **Angular CDK** — accessible UI primitives, M3 theming
-- **Chart.js + ng2-charts** — interactive dashboard charts
-- **Native WebSocket** — JSON `VmEvent` stream from the API host (`resolveVmWebSocketUrl()`)
-- **TypeScript (strict)** + **SCSS** with design tokens
-- **Lazy-loaded** route bundles, **OnPush** components everywhere
-
----
-
-## Project structure
+### Árbol principal (`src/`)
 
 ```
 src/
 ├── app/
-│   ├── core/                          # Cross-cutting concerns
-│   │   ├── config/                    # API base URL, WebSocket path helper, app constants
-│   │   ├── constants/                 # OS list, VM status metadata
+│   ├── core/                          # Infraestructura: sin dependencias de features
+│   │   ├── config/                    # APP_CONFIG, resolveVmWebSocketUrl, etc.
+│   │   ├── constants/                 # OS permitidos, metadatos de estado VM
 │   │   ├── guards/                    # auth.guard, role.guard (CanActivateFn)
-│   │   ├── interceptors/              # credentials + global error handling
-│   │   ├── models/                    # User, VM, WebSocket event TS contracts
-│   │   └── services/                  # Auth, VM, Notification, WebSocket, Theme
+│   │   ├── interceptors/              # credentials, error (global)
+│   │   ├── models/                    # User, VM, VmEvent (contratos TS)
+│   │   ├── services/                  # Auth, Vm, WebSocket, Theme, Notification
+│   │   ├── utils/                     # p. ej. unwrap de respuestas API (vm-api-response)
+│   │   └── http-context.ts            # tokens de contexto HTTP (p. ej. probe de sesión)
 │   │
-│   ├── shared/                        # Reusable, presentational pieces
-│   │   ├── components/                # toast, skeleton, empty-state, confirm-dialog,
-│   │   │                              # loading-spinner, vm-card, stat-card,
-│   │   │                              # vm-status-badge
-│   │   ├── pipes/                     # relativeTime, storageSize
-│   │   └── utils/                     # (reserved)
+│   ├── shared/                        # UI y utilidades reutilizables (dumb components)
+│   │   ├── components/                # stat-card, vm-card, skeleton, empty-state, …
+│   │   ├── directives/              # (reservado / extensiones futuras)
+│   │   ├── pipes/                     # storage-size, relative-time
+│   │   └── utils/                     # (reservado)
 │   │
-│   ├── features/                      # Feature modules (lazy)
-│   │   ├── auth/                      # /login page, reactive forms
-│   │   ├── dashboard/                 # KPIs + ng2-charts
-│   │   └── vms/                       # list, filters, create, edit
+│   ├── features/                      # Dominio por vertical + lazy loading
+│   │   ├── auth/
+│   │   │   └── pages/login/           # Login, formulario reactivo
+│   │   ├── dashboard/
+│   │   │   ├── dashboard.routes.ts
+│   │   │   └── pages/dashboard/       # KPIs, gráficos
+│   │   └── vms/
+│   │       ├── vms.routes.ts
+│   │       ├── components/vm-filters/ # Filtros del listado
+│   │       └── pages/
+│   │           ├── vm-list/           # Listado, acciones ADMIN
+│   │           └── vm-form/           # Alta / edición
 │   │
-│   ├── layout/                        # Authenticated app shell
-│   │   ├── components/sidebar
-│   │   ├── components/topbar
-│   │   └── shell                      # Composes sidebar + topbar + <router-outlet>
+│   ├── layout/                        # Shell de la zona autenticada
+│   │   ├── shell/                     # Sidebar + topbar + router-outlet hijo
+│   │   └── components/
+│   │       ├── sidebar/
+│   │       └── topbar/
 │   │
-│   ├── store/                         # Signal-based global state
+│   ├── store/                         # Estado global (Angular Signals)
 │   │   ├── auth.store.ts
 │   │   └── vm.store.ts
 │   │
-│   ├── app.config.ts                  # Providers (HttpClient, Router, Animations, Charts)
-│   ├── app.routes.ts                  # Top-level routes & lazy loading
-│   ├── app.ts                         # Root component
-│   └── app.html / app.scss
+│   ├── app.config.ts                  # Providers: Zone, Router, Http, Charts, app initializer
+│   ├── app.routes.ts                  # Rutas raíz, guards, lazy
+│   ├── app.ts / app.html / app.scss   # Raíz de la aplicación
+│   └── *.spec.ts                      # Tests junto al código que prueban
 │
-├── styles/                            # Global SCSS
-│   ├── theme.scss                     # Material 3 theme + tokens
-│   ├── tokens.scss                    # Design tokens (dark / light)
-│   └── global.scss                    # Resets + Material overrides
-│
-├── styles.scss                        # Stylesheet entry point
-├── index.html                         # Fonts + Material icons
-└── main.ts                            # bootstrapApplication(App, appConfig)
+├── styles/                            # SCSS global: Material theme, tokens, global
+├── styles.scss                        # Punto de entrada de estilos
+├── testing/                           # Utilidades compartidas de tests (p. ej. fixtures)
+├── index.html
+└── main.ts                            # bootstrap + zone.js
+```
+
+### Raíz del repositorio (referencia)
+
+```
+vitest.config.ts          # Umbrales y reporters de cobertura Vitest
+angular.json              # build, serve, unit-test → vitest.config.ts
+package.json
+```
+
+### Qué va en cada capa
+
+| Carpeta | Responsabilidad | No debe |
+|---------|-------------------|---------|
+| **`core/`** | HTTP, seguridad, modelos, reglas de transporte | Importar desde `features/*` |
+| **`store/`** | Estado y comandos que orquestan servicios | Contener plantillas HTML de página |
+| **`features/`** | Páginas y rutas de un flujo de usuario | Duplicar lógica que ya está en `core` |
+| **`shared/`** | Componentes/pipes presentacionales | Conocer rutas o stores salvo inputs |
+| **`layout/`** | Composición del shell (navegación global) | Sustituir a `features` en lógica de negocio |
+
+### Convenciones rápidas
+
+- **Un componente por carpeta**: `*.ts`, `*.html`, `*.scss`, opcionalmente `*.spec.ts`.
+- **Rutas lazy**: `loadComponent` / `loadChildren` desde `app.routes.ts` y `*.routes.ts` en features.
+- **Tests**: mismo árbol que el código (`*.spec.ts` al lado del fichero o en la misma feature).
+
+---
+
+## Tabla de contenidos
+
+1. [Estructura de carpetas](#estructura-de-carpetas) — mapa del repo (arriba)
+2. [Requisitos y arranque](#requisitos-y-arranque)
+3. [Scripts útiles](#scripts-útiles)
+4. [Pruebas unitarias](#pruebas-unitarias)
+5. [Cómo presentar el proyecto (guía)](#cómo-presentar-el-proyecto-guía)
+6. [Stack técnico](#stack-técnico)
+7. [Arquitectura y decisiones](#arquitectura-y-decisiones)
+8. [Estado (Signals)](#estado-signals)
+9. [UI optimista](#ui-optimista)
+10. [Autenticación HttpOnly](#autenticación-httponly)
+11. [WebSocket](#websocket)
+12. [Rutas, guards y lazy loading](#rutas-guards-y-lazy-loading)
+13. [UI, temas y validación](#ui-temas-y-validación)
+14. [Roles ADMIN / CLIENT](#roles-admin--client)
+15. [Contrato API (resumen)](#contrato-api-resumen)
+
+---
+
+## Requisitos y arranque
+
+| Requisito | Versión / nota |
+|-----------|------------------|
+| Node.js | 20+ |
+| npm | 10+ |
+| Backend | `http://localhost:8080` (CORS con credenciales hacia `http://localhost:4200`) |
+
+```bash
+npm install
+npm start          # http://localhost:4200
+```
+
+**Cuentas de demo** (también en chips en la pantalla de login):
+
+| Rol    | Email              | Contraseña |
+|--------|--------------------|------------|
+| ADMIN  | admin@test.com     | 123456     |
+| CLIENT | client@test.com   | client123  |
+
+```bash
+npm run build      # producción → dist/vm-manager
+npm run watch      # build dev incremental
 ```
 
 ---
 
-## Architecture & technical decisions
+## Scripts útiles
 
-The app follows a layered **Clean Architecture** approach:
-
-- **Core layer** owns infrastructure (HTTP, WS, models, interceptors, guards). It
-  never depends on features.
-- **Store layer** owns state and orchestrates writes. Stores expose **read-only
-  signals** + thin command methods (`createVm`, `updateVm`, etc.) so components stay
-  presentational.
-- **Shared layer** holds dumb/presentational, reusable UI building blocks.
-- **Layout layer** composes the authenticated shell.
-- **Features layer** holds smart container pages that consume stores. Each feature has
-  its own `*.routes.ts` and lazy-loaded standalone components.
-
-Other key decisions:
-
-- **Standalone everywhere** — zero NgModules. Each component imports exactly what it
-  needs.
-- **`inject()`** instead of constructor injection for ergonomics and tree-shaking.
-- **`ChangeDetectionStrategy.OnPush`** is enabled on every component.
-- **Zone.js change detection** (`provideZoneChangeDetection` + `import 'zone.js'` in `main.ts`)
-  — ensures the router outlet and Material update reliably after navigation while Signals
-  still drive application state.
-- **Lazy loaded feature routes** (`loadChildren`) and **lazy components**
-  (`loadComponent`) to keep the initial bundle small.
-- **`withComponentInputBinding()`** is enabled so route params become typed inputs.
+| Comando | Uso |
+|---------|-----|
+| `npm start` | Servidor de desarrollo en el puerto 4200. |
+| `npm run build` | Artefacto de producción. |
+| `npm run watch` | Build en modo watch. |
+| `npm test` | Pruebas unitarias en **watch** (Vitest vía Angular CLI). |
+| `npm run test:ci` | Una sola pasada + **cobertura** (`--watch=false --coverage`). |
 
 ---
 
-## State management with Signals
+## Pruebas unitarias
 
-> **NgRx is intentionally not used.** Angular Signals plus a few `@Injectable({
-> providedIn: 'root' })` stores give us a small, reactive, fully type-safe state model
-> with zero boilerplate.
+El proyecto usa el builder **`@angular/build:unit-test`** con **Vitest** y **`jsdom`**. La configuración de cobertura y umbrales está en **`vitest.config.ts`** (reporter `text`, `text-summary`, `html`; umbrales ~80% líneas/funciones y 75% ramas).
 
-### `AuthStore` — `src/app/store/auth.store.ts`
-- `user`, `loading`, `isAuthenticated`, `role`, `isAdmin`, `initials` — all `signal`
-  / `computed`.
-- `login(payload)`, `logout()`, `hydrateFromServer()`, `clearUser()`.
-- Persists only **non-secret user metadata** (id, name, email, role) so the UI can
-  hydrate instantly. The real session lives in the **HttpOnly cookie** managed by the
-  backend (we never store a JWT).
+### Ejecutar
 
-### `VmStore` — `src/app/store/vm.store.ts`
-- `vms`, `loading`, `error`, `highlightedId`, `filters` — primitive signals.
-- Derived computed signals: `totalCount`, `runningCount`, `pausedCount`,
-  `stoppedCount`, `totalCores`, `totalRam`, `totalDisk`, `statusBreakdown`,
-  `osBreakdown`, `availableOs`, `filteredVms`. The dashboard charts and the VM list
-  are pure projections of these.
-- Commands: `loadVms()`, `createVm()`, `updateVm()`, `deleteVm()`, plus filter setters
-  (`setSearch`, `setStatusFilter`, `setOsFilter`, `clearFilters`).
-- `applyServerEvent(event)` — bridge for WebSocket JSON events.
-
----
-
-## Optimistic UI
-
-`VmStore.createVm`, `updateVm`, and `deleteVm` all apply changes **synchronously to
-the signal** before the HTTP call returns:
-
-1. Build an optimistic snapshot (temp negative id for creates, copy-and-merge for
-   updates, filter-out for deletes).
-2. Update `_vms` signal → templates re-render instantly thanks to OnPush + signal
-   subscriptions.
-3. Subscribe to the HTTP `Observable`:
-   - on `next` → replace the optimistic record with the canonical server payload,
-     flash a highlight via `highlightedId`, and show a success toast.
-   - on `error` → **roll back** the signal to its previous value and surface a
-     friendly toast: *"Failed to create VM. Changes were rolled back."*
-
-Because rollback is data-driven (signals), the UI reverts atomically with no manual DOM
-manipulation. Real-time WebSocket events are reconciled by id too, so optimistic creations
-get reconciled cleanly when the server confirms them.
-
----
-
-## HttpOnly cookie authentication
-
-There is **no client-side JWT storage**.
-
-- `credentialsInterceptor` (`src/app/core/interceptors/credentials.interceptor.ts`)
-  adds `withCredentials: true` to **every** request hitting the API base URL. This
-  causes the browser to attach the backend's `Set-Cookie` (HttpOnly, SameSite) to
-  every call, including the WebSocket handshake.
-- `POST /login` sets the cookie server-side; the response body returns the user
-  profile, which we store **only for UI hydration** (no token).
-- `POST /logout` clears the cookie server-side; the store wipes its local copy of the
-  profile and routes the user back to `/login`.
-- The `errorInterceptor` intercepts `401` responses and routes the user to `/login`
-  with a `redirect` query param so they return to the page they came from.
-
-> **CORS reminder for the backend**: it must respond with
-> `Access-Control-Allow-Credentials: true` and an explicit
-> `Access-Control-Allow-Origin: http://localhost:4200` (not `*`).
-
----
-
-## WebSocket flow (native JSON)
-
-`WebsocketService` (`src/app/core/services/websocket.service.ts`) opens a **standard
-`WebSocket`** to `resolveVmWebSocketUrl()` (from `APP_CONFIG.apiBaseUrl`: `http` → `ws`,
-`https` → `wss`, path **`/ws/vms`**). It exposes a `Subject<VmEvent>` and a `status`
-signal for the topbar pill (`connecting`, `connected`, `disconnected`, `error`).
-
-1. On shell mount, `ShellComponent` calls `ws.connect()` after the first render.
-2. Each `message` is `JSON.parse(event.data)` and pushed to `vmEvents$` if it matches
-   the `VmEvent` shape.
-3. The shell forwards every event to `VmStore.applyServerEvent(event)`:
-   - `VM_CREATED` → push (or upsert) into `_vms`, flash the new card.
-   - `VM_UPDATED` / `VM_STATUS_CHANGED` → patch-merge the matching VM, flash the card.
-   - `VM_DELETED` → remove by id.
-4. On abnormal close, the client reconnects after **4 s** (manual `disconnect()` does
-   not reconnect).
-
-The browser sends the same **HttpOnly** session cookies on the WebSocket handshake as
-for `fetch`/`XHR` when the connection is same-site / credentialed per your backend
-configuration.
-
----
-
-## Routing, guards & lazy loading
-
-```ts
-// src/app/app.routes.ts
-'' → '/dashboard'
-
-/login                            (guestGuard, lazy → LoginPage)
-
-/                                 (authGuard, ShellComponent)
-  ├── /dashboard                  (lazy → DASHBOARD_ROUTES)
-  └── /vms                        (lazy → VMS_ROUTES)
-      ├── /vms/create             (roleGuard(['ADMIN']))
-      └── /vms/edit/:id           (roleGuard(['ADMIN']))
-
-**                               → '/dashboard'
+```bash
+npm test              # desarrollo: re-ejecuta al cambiar archivos
+npm run test:ci       # CI: una pasada + informe de cobertura
 ```
 
-- `authGuard` — blocks unauthenticated traffic from the shell, preserving the
-  attempted URL via `?redirect=`.
-- `guestGuard` — bounces authenticated users away from `/login`.
-- `roleGuard(['ADMIN'])` — protects mutation routes. CLIENT users can still read.
-- Every feature is registered with `loadChildren` / `loadComponent` for **route-level
-  code splitting**.
+Tras `npm run test:ci`, Vitest genera cobertura bajo **`coverage/vm-manager/`** (entre otros, un **`index.html`** que puedes abrir en el navegador para una vista tabular). Los umbrales mínimos están en `vitest.config.ts`; en un estado reciente del repo la cobertura global ronda **~93% líneas** (varía al añadir código).
+
+### Qué está cubierto (por capas)
+
+Los ficheros `*.spec.ts` siguen al código bajo `src/app/`:
+
+| Área | Ejemplos de `*.spec.ts` |
+|------|-------------------------|
+| **Bootstrap** | `app.spec.ts`, `app.config.spec.ts`, `app.routes.spec.ts` |
+| **Core** | Guards (`auth`, `role`), interceptors (`credentials`, `error`), servicios (`auth`, `vm`, `websocket`, `theme`, `notification`), utilidades (`vm-api-response`, `http-context`, constantes, `app.config`) |
+| **Store** | `auth.store.spec.ts`, `vm.store.spec.ts` |
+| **Features** | Login, dashboard, listado/formulario de VMs, filtros, rutas de feature |
+| **Layout** | `shell`, `sidebar`, `topbar` |
+| **Shared** | `vm-card`, `stat-card`, `confirm-dialog`, `empty-state`, `skeleton`, `loading-spinner`, `vm-status-badge`, pipes |
+
+Las pruebas permiten demostrar en una entrevista o revisión que la **lógica sensible** (guards, stores, interceptors, parseo de API) está verificada sin depender siempre del backend en vivo.
 
 ---
 
-## Theming, dark mode & UI system
+## Cómo presentar el proyecto (guía)
 
-- **Material 3 theme** via the new `mat.theme()` API, palette: `mat.$violet-palette`
-  (primary) + `mat.$blue-palette` (tertiary), density `-1`.
-- **Native dark mode**: the `ThemeService` initializes from `localStorage`, falls
-  back to `prefers-color-scheme`, and applies `theme-dark` / `theme-light` classes on
-  `<html>`. Toggling the moon icon in the topbar instantly re-themes the entire app.
-- **Design tokens** live in `src/styles/tokens.scss` (surfaces, borders, brand colors,
-  shadows, radii, fonts) and are scoped per theme via the `html.theme-*` selectors.
-- **Glassmorphism** is applied to cards/panels via `backdrop-filter: blur(...)` over
-  semi-transparent surfaces.
-- **Typography**: Inter (UI) + JetBrains Mono (ids / counters), loaded from
-  Google Fonts.
-- **Animations** are kept short (180–220 ms) using `cubic-bezier(.4, 0, .2, 1)` for a
-  premium feel. The VM card has a `vm-flash` keyframe used by the optimistic /
-  WebSocket highlight animation.
+1. **Mapa del repo (~30 s):** Abre [Estructura de carpetas](#estructura-de-carpetas): `core` → `store` → `features` → `layout` → `shared`.
+2. **Seguridad (~45 s):** Cookie HttpOnly, `withCredentials`, rol CLIENT sin botones de mutación.
+3. **Estado (~45 s):** `auth.store` / `vm.store`, Signals y comandos que llaman a servicios.
+4. **Optimistic UI (~60 s):** Crear o editar VM; rollback si falla la API.
+5. **Tiempo real (~30 s):** WebSocket y `VmStore.applyServerEvent`.
+6. **Calidad (~30 s):** `npm run test:ci` o recorrido de `*.spec.ts` y `vitest.config.ts`.
 
 ---
 
-## Validation & error handling
+## Stack técnico
 
-### Reactive forms with real-time validation
-
-- `LoginPage` — typed form with `email`, `password`. Validators: `required`, `email`,
-  `minLength(6)`. Field-level errors update on touch.
-- `VmFormPage` — typed form with all VM fields and constraints aligned with the backend:
-  - `name`: required, min **2**, max **100** characters
-  - `os`: required (curated list), max **100** characters
-  - `status`: edit only — required, pattern **RUNNING \| STOPPED \| PAUSED** (create omits `status`; API defaults to STOPPED)
-  - `cores`: required, min **1** (no upper bound in API contract)
-  - `ram`: required, min **1**, max **64** (GB)
-  - `disk`: required, min **1** GB (no upper bound in API contract)
-
-Helper methods (`errorOf(...)`, `emailError()`, `passwordError()`) translate validator
-errors into user-friendly copy that renders inside the Material `<mat-error>` slots.
-
-### Global error visualization (`errorInterceptor`)
-
-| Status | Behavior |
-|--------|----------|
-| 0      | "Network error. Unable to reach the server." toast |
-| 400    | Generic / backend message toast |
-| 401    | Warn toast + auto-redirect to `/login` |
-| 403    | Error toast (kept in current page) |
-| 404    | Friendly "Not found" toast |
-| 422    | "The submitted data is invalid." (with backend message if present) |
-| 5xx    | "Internal server error / service unavailable" toast |
-
-All toasts are emitted via the `NotificationService` (Angular Material `MatSnackBar`
-with custom panel classes for `success`, `error`, `info`, `warn`).
-
-The store-level rollback messages take priority over generic interceptor messages
-when an optimistic operation fails.
+- **Angular 21** — componentes **standalone**, control flow (`@if`, `@for`), **`inject()`**, **OnPush**.
+- **Zone.js** — `provideZoneChangeDetection` para un **Router** y Material estables.
+- **Angular Signals** — estado global en stores; sin NgRx.
+- **RxJS** — HTTP, efectos secundarios, rollback en UI optimista.
+- **Angular Material 3** + **CDK**.
+- **Chart.js** + **ng2-charts** — dashboard.
+- **WebSocket** nativo — eventos de VMs (ruta configurable desde `APP_CONFIG`).
+- **TypeScript estricto** + **SCSS** (tokens, modo claro/oscuro).
+- **Vitest** — unit tests (`ng test` / `vitest.config.ts`).
 
 ---
 
-## Roles & permissions (ADMIN vs CLIENT)
+## Arquitectura y decisiones
 
-- The `AuthStore` exposes `isAdmin = computed(() => role() === 'ADMIN')`.
-- **Buttons are not just disabled — they are removed from the DOM.** Every "create",
-  "edit", and "delete" affordance lives under `@if (auth.isAdmin()) { ... }`.
-- The `vm-card` only renders its "more actions" menu when `[canManage]="auth.isAdmin()"`.
-- Route-level enforcement happens in `roleGuard(['ADMIN'])` so even direct URL access
-  to `/vms/create` and `/vms/edit/:id` is rejected for CLIENT users.
+Resumen; el **desglose de carpetas y convenciones** está en [Estructura de carpetas](#estructura-de-carpetas).
+
+- **Core** no depende de **features**; encapsula API, seguridad y modelos.
+- **Store** orquesta lecturas/escrituras y expone señales de solo lectura donde aplica.
+- **Features** son contenedores/páginas que consumen stores y servicios.
+- **Shared** son piezas UI presentacionales reutilizables.
+- **Lazy loading** de rutas y componentes para reducir el bundle inicial.
+- **`withComponentInputBinding()`** en el router para inputs tipados desde rutas.
 
 ---
 
-## Backend contract
+## Estado (Signals)
 
-Base URL — `http://localhost:8080` (configurable in
-`src/app/core/config/app.config.ts`).
+### `AuthStore` (`store/auth.store.ts`)
 
-| Method | Path           | Body                                 | Notes                                          |
-|--------|----------------|--------------------------------------|------------------------------------------------|
-| POST   | `/login`       | `{ email, password }`                | Sets HttpOnly cookie, returns `User`            |
-| POST   | `/logout`      | —                                    | Clears HttpOnly cookie                          |
-| GET    | `/vms`         | —                                    | Returns `VirtualMachine[]`                      |
-| GET    | `/vms/{id}`    | —                                    | Returns one `VirtualMachine`                    |
-| POST   | `/vms`         | `CreateVmPayload` (no `status`; server defaults to STOPPED) | Returns the created `VirtualMachine`            |
-| PUT    | `/vms/{id}`    | Full update body (`name`, `os`, `status`, `cores`, `ram`, `disk`); UI may send partial `UpdateVmPayload` — the store merges with the current VM before PUT | Returns the updated `VirtualMachine`            |
-| DELETE | `/vms/{id}`    | —                                    | 204 / void                                      |
-| WS     | `ws(s)://<host>/ws/vms` (native JSON) | —                          | Pushes `{ event, data }` (`VmEvent`) in real time |
+- Señales: usuario, `loading`, `isAuthenticated`, rol, iniciales.
+- `login` / `logout`; **`hydrateSession()`** valida la cookie con **`GET /vms`** al arranque (mismo contrato que el backend; sin endpoint `/me`).
+- Perfil en `localStorage` solo para UX; la sesión real es la **cookie HttpOnly**.
 
-### TypeScript contracts
+### `VmStore` (`store/vm.store.ts`)
 
-```ts
-type UserRole = 'ADMIN' | 'CLIENT';
+- Lista de VMs, filtros, KPIs derivados con **`computed`**, operaciones **optimistas**, `applyServerEvent` para WebSocket.
 
-interface User {
-  id: number; name: string; email: string; role: UserRole;
-}
+---
 
-type VmStatus = 'RUNNING' | 'STOPPED' | 'PAUSED';
+## UI optimista
 
-interface VirtualMachine {
-  id: number;
-  name: string;
-  cores: number; ram: number; disk: number;
-  os: string;
-  status: VmStatus;
-  createdAt: string; updatedAt: string;
-}
+En crear / actualizar / eliminar VM: primero se actualiza el estado local (Signals), luego la petición HTTP; en error **`catchError`** revierte y muestra mensaje amigable.
 
-interface VmEvent {
-  event: 'VM_CREATED' | 'VM_UPDATED' | 'VM_DELETED';
-  data: VirtualMachine | { id: number };
-}
+---
+
+## Autenticación HttpOnly
+
+- Interceptor **`credentials`**: `withCredentials: true` hacia el origen del API.
+- **`POST /login`** establece cookie; **`POST /logout`** la invalida.
+- **`errorInterceptor`**: en **401** limpia usuario caché y redirige a login; trata **0** (red/CORS) en llamadas al API.
+
+---
+
+## WebSocket
+
+Servicio de WebSocket nativo: conexión al host del API, parseo de JSON a **`VmEvent`**, reconexión ante cierre anormal. El **shell** suscribe y delega en **`VmStore.applyServerEvent`**.
+
+---
+
+## Rutas, guards y lazy loading
+
+Flujo actual (`app.routes.ts`):
+
+```
+/                    → redirect a /login
+/login               → guestGuard → LoginPage (lazy)
+''                   → authGuard → Shell (lazy)
+  ├── ''             → redirect a /dashboard
+  ├── dashboard      → lazy
+  └── vms            → lazy (+ create/edit con roleGuard ADMIN)
+**                   → redirect a login
 ```
 
----
+La primera ruta `path: ''` con `pathMatch: 'full'` solo coincide con **`/`** y redirige a login; la segunda `path: ''` es el **shell** para el resto de URLs bajo la raíz autenticada (`/dashboard`, `/vms`, …).
 
-## Available scripts
-
-| Command           | What it does                                    |
-|-------------------|-------------------------------------------------|
-| `npm start`       | Serves the app on http://localhost:4200          |
-| `npm run build`   | Production build (`dist/vm-manager`)             |
-| `npm run watch`   | Incremental development build                    |
+- **`authGuard`**: exige usuario en store (tras hidratar sesión con cookie válida).
+- **`guestGuard`**: si ya hay sesión válida en cliente, redirige al dashboard.
+- **`roleGuard(['ADMIN'])`**: rutas de creación/edición solo administradores.
 
 ---
 
-Crafted to feel like a real production cloud console — Angular Signals · WebSockets ·
-Material 3 · Glassmorphism · Dark Mode.
+## UI, temas y validación
+
+- Tema Material 3 + tokens en `styles/`; modo claro/oscuro (`ThemeService`).
+- Formularios reactivos en login y formulario de VM con validaciones alineadas al contrato del backend.
+- Toasts globales vía **`MatSnackBar`** + interceptor de errores.
+
+---
+
+## Roles ADMIN / CLIENT
+
+- **`auth.isAdmin()`** en plantillas: botones de crear/editar/eliminar **no se renderizan** para CLIENT.
+- **`roleGuard`** en rutas sensibles.
+
+---
+
+## Contrato API (resumen)
+
+Base: **`http://localhost:8080`** (ver `src/app/core/config/app.config.ts`).
+
+| Método | Ruta | Notas |
+|--------|------|--------|
+| POST | `/login` | Cookie de sesión + cuerpo usuario |
+| POST | `/logout` | Invalida sesión |
+| GET/POST/PUT/DELETE | `/vms`, `/vms/:id` | CRUD; respuestas pueden ir envueltas; el **`VmService`** normaliza con `vm-api-response`. |
+| WS | ruta configurable (p. ej. `/ws/vms`) | Eventos `VM_CREATED` / `VM_UPDATED` / `VM_DELETED` |
+
+---
+
+## Licencia y créditos
+
+Yeison Rua - prueba técnica — **VM Console**: Angular · Signals · Material 3 · Vitest.
