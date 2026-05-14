@@ -1,0 +1,7 @@
+@use '@angular/material' as mat;
+@use './styles/theme.scss';
+@use './styles/tokens.scss';
+@use './styles/global.scss';
+
+@include mat.elevation-classes();
+@include mat.app-background();

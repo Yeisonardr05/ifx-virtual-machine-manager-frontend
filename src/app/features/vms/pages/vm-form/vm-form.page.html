@@ -1,0 +1,135 @@
+<section class="vm-form">
+  <header class="vm-form__header">
+    <a class="back-link" routerLink="/vms">
+      <mat-icon>arrow_back</mat-icon>
+      <span>Back to VMs</span>
+    </a>
+    <h1>{{ pageTitle() }}</h1>
+    <p>{{ pageSubtitle() }}</p>
+  </header>
+
+  <form
+    class="vm-form__card"
+    [formGroup]="form"
+    (ngSubmit)="submit()"
+    novalidate
+  >
+    <div class="vm-form__section">
+      <h2>Identity</h2>
+      <p>How this virtual machine is identified inside your fleet.</p>
+
+      <div class="vm-form__grid">
+        <mat-form-field appearance="outline" class="span-2">
+          <mat-label>Name</mat-label>
+          <input matInput formControlName="name" placeholder="e.g. prod-web-01" maxlength="40" />
+          <mat-icon matSuffix>label</mat-icon>
+          <mat-hint align="end">{{ form.controls.name.value.length }}/40</mat-hint>
+          @if (errorOf('name')) {
+            <mat-error>{{ errorOf('name') }}</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Operating system</mat-label>
+          <mat-select formControlName="os">
+            @for (option of osOptions; track option.value) {
+              <mat-option [value]="option.value">
+                <mat-icon class="select-icon">{{ option.icon }}</mat-icon>
+                {{ option.label }}
+              </mat-option>
+            }
+          </mat-select>
+          @if (errorOf('os')) {
+            <mat-error>{{ errorOf('os') }}</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Status</mat-label>
+          <mat-select formControlName="status">
+            @for (option of statusOptions; track option.value) {
+              <mat-option [value]="option.value">{{ option.label }}</mat-option>
+            }
+          </mat-select>
+          @if (errorOf('status')) {
+            <mat-error>{{ errorOf('status') }}</mat-error>
+          }
+        </mat-form-field>
+      </div>
+    </div>
+
+    <div class="vm-form__section">
+      <h2>Resources</h2>
+      <p>Compute, memory and storage allocated to this VM.</p>
+
+      <div class="vm-form__grid">
+        <mat-form-field appearance="outline">
+          <mat-label>vCPU cores</mat-label>
+          <input
+            matInput
+            type="number"
+            formControlName="cores"
+            min="1"
+            max="64"
+            inputmode="numeric"
+          />
+          <span matSuffix class="suffix">cores</span>
+          @if (errorOf('cores')) {
+            <mat-error>{{ errorOf('cores') }}</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>RAM</mat-label>
+          <input
+            matInput
+            type="number"
+            formControlName="ram"
+            min="1"
+            max="1024"
+            inputmode="numeric"
+          />
+          <span matSuffix class="suffix">GB</span>
+          @if (errorOf('ram')) {
+            <mat-error>{{ errorOf('ram') }}</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Disk</mat-label>
+          <input
+            matInput
+            type="number"
+            formControlName="disk"
+            min="10"
+            max="10000"
+            inputmode="numeric"
+          />
+          <span matSuffix class="suffix">GB</span>
+          @if (errorOf('disk')) {
+            <mat-error>{{ errorOf('disk') }}</mat-error>
+          }
+        </mat-form-field>
+      </div>
+    </div>
+
+    <footer class="vm-form__actions">
+      <a mat-stroked-button type="button" routerLink="/vms">Cancel</a>
+      <button
+        mat-flat-button
+        color="primary"
+        type="submit"
+        [disabled]="form.invalid || submitting()"
+      >
+        @if (submitting()) {
+          <app-loading-spinner [size]="22" />
+        } @else {
+          <span class="submit-content">
+            <mat-icon>{{ isEdit() ? 'save' : 'rocket_launch' }}</mat-icon>
+            <span>{{ isEdit() ? 'Save changes' : 'Create VM' }}</span>
+          </span>
+        }
+      </button>
+    </footer>
+  </form>
+</section>

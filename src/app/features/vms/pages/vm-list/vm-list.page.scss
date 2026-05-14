@@ -1,0 +1,115 @@
+:host {
+  display: block;
+}
+
+.vm-list {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.vm-list__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+
+  h1 {
+    margin: 4px 0 6px;
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+  }
+
+  p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.92rem;
+  }
+}
+
+.vm-list__eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--brand-primary);
+}
+
+.vm-list__actions {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.vm-list__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 0.86rem;
+  color: var(--text-muted);
+
+  strong { color: var(--text-primary); font-weight: 600; }
+}
+
+.vm-list__legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
+  font-size: 0.82rem;
+}
+
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.dot--success { background: var(--color-success); }
+.dot--warn { background: var(--color-warn); }
+.dot--danger { background: var(--color-danger); }
+
+.vm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 18px;
+}
+
+.skeleton-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  background: var(--glass-surface);
+  border: 1px solid var(--border-soft);
+  min-height: 220px;
+
+  &__top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  &__title {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    padding: 14px;
+    border-radius: var(--radius-md);
+    background: var(--surface-1);
+  }
+}

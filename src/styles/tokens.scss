@@ -1,0 +1,79 @@
+:root {
+  --font-sans: 'Inter', 'SF Pro Display', system-ui, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+
+  --brand-primary: #6366f1;
+  --brand-primary-soft: #8b5cf6;
+
+  --color-success: #22c55e;
+  --color-warn: #f59e0b;
+  --color-danger: #ef4444;
+  --color-info: #38bdf8;
+
+  /* Defaults until ThemeService adds html.theme-* (prevents invisible UI on first paint). */
+  color-scheme: dark;
+  --app-background: #0b1020;
+  --surface-0: #0f172a;
+  --surface-1: #111a30;
+  --surface-2: #1b2540;
+  --surface-3: #243057;
+  --glass-surface: rgba(17, 26, 48, 0.6);
+  --text-primary: #f8fafc;
+  --text-muted: #94a3b8;
+  --border-soft: rgba(148, 163, 184, 0.12);
+  --border-strong: rgba(148, 163, 184, 0.24);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 20px 40px -16px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 40px 90px -32px rgba(0, 0, 0, 0.6);
+}
+
+html.theme-light {
+  color-scheme: light;
+
+  --app-background: #f4f6fb;
+  --surface-0: #ffffff;
+  --surface-1: #f9fafb;
+  --surface-2: #f3f4f6;
+  --surface-3: #e5e7eb;
+
+  --glass-surface: rgba(255, 255, 255, 0.74);
+
+  --text-primary: #0f172a;
+  --text-muted: #64748b;
+
+  --border-soft: rgba(15, 23, 42, 0.08);
+  --border-strong: rgba(15, 23, 42, 0.16);
+
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 12px 32px -16px rgba(15, 23, 42, 0.18);
+  --shadow-lg: 0 30px 80px -32px rgba(15, 23, 42, 0.28);
+}
+
+html.theme-dark {
+  color-scheme: dark;
+
+  --app-background: #0b1020;
+  --surface-0: #0f172a;
+  --surface-1: #111a30;
+  --surface-2: #1b2540;
+  --surface-3: #243057;
+
+  --glass-surface: rgba(17, 26, 48, 0.6);
+
+  --text-primary: #f8fafc;
+  --text-muted: #94a3b8;
+
+  --border-soft: rgba(148, 163, 184, 0.12);
+  --border-strong: rgba(148, 163, 184, 0.24);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 20px 40px -16px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 40px 90px -32px rgba(0, 0, 0, 0.6);
+}

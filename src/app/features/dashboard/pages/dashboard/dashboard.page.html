@@ -1,0 +1,172 @@
+<section class="dashboard">
+  <header class="dashboard__header">
+    <div>
+      <span class="dashboard__eyebrow">Overview</span>
+      <h1>Infrastructure dashboard</h1>
+      <p>Real-time snapshot of your virtual machines and resource consumption.</p>
+    </div>
+    <div class="dashboard__header-actions">
+      <button mat-stroked-button type="button" (click)="refresh()" [disabled]="vmStore.loading()">
+        <mat-icon>refresh</mat-icon>
+        <span>Refresh</span>
+      </button>
+      @if (auth.isAdmin()) {
+        <a mat-flat-button color="primary" routerLink="/vms/create">
+          <mat-icon>add</mat-icon>
+          <span>New VM</span>
+        </a>
+      }
+    </div>
+  </header>
+
+  <div class="dashboard__stats">
+    <app-stat-card
+      label="Total VMs"
+      [value]="vmStore.totalCount()"
+      icon="dns"
+      tone="primary"
+      hint="Across all environments"
+      [loading]="vmStore.loading() && !vmStore.initialLoaded()"
+    />
+    <app-stat-card
+      label="Running"
+      [value]="vmStore.runningCount()"
+      icon="play_circle"
+      tone="success"
+      hint="Currently active"
+      [loading]="vmStore.loading() && !vmStore.initialLoaded()"
+    />
+    <app-stat-card
+      label="Total Cores"
+      [value]="vmStore.totalCores()"
+      icon="memory"
+      tone="info"
+      hint="vCPU allocated"
+      [loading]="vmStore.loading() && !vmStore.initialLoaded()"
+    />
+    <app-stat-card
+      label="Total RAM"
+      [value]="vmStore.totalRam() | storageSize"
+      icon="developer_board"
+      tone="warn"
+      hint="Memory provisioned"
+      [loading]="vmStore.loading() && !vmStore.initialLoaded()"
+    />
+    <app-stat-card
+      label="Total Disk"
+      [value]="vmStore.totalDisk() | storageSize"
+      icon="storage"
+      tone="danger"
+      hint="Storage provisioned"
+      [loading]="vmStore.loading() && !vmStore.initialLoaded()"
+    />
+  </div>
+
+  <div class="dashboard__grid">
+    <article class="panel panel--chart panel--span-2">
+      <header class="panel__header">
+        <div>
+          <h2>Resource allocation</h2>
+          <p>Top 6 VMs by allocated cores, RAM and disk.</p>
+        </div>
+      </header>
+      <div class="panel__chart">
+        @if (vmStore.loading() && !vmStore.initialLoaded()) {
+          <div class="chart-loading"><app-loading-spinner /></div>
+        } @else if (!hasData()) {
+          <app-empty-state
+            icon="bar_chart"
+            title="No data to chart yet"
+            description="Create your first VM to see resource usage."
+          />
+        } @else {
+          <canvas baseChart type="bar" [data]="resourceChartData()" [options]="resourceChartOptions"></canvas>
+        }
+      </div>
+    </article>
+
+    <article class="panel panel--chart">
+      <header class="panel__header">
+        <div>
+          <h2>Status distribution</h2>
+          <p>Running vs paused vs stopped.</p>
+        </div>
+      </header>
+      <div class="panel__chart panel__chart--doughnut">
+        @if (vmStore.loading() && !vmStore.initialLoaded()) {
+          <div class="chart-loading"><app-loading-spinner /></div>
+        } @else if (!hasData()) {
+          <app-empty-state
+            icon="donut_large"
+            title="Nothing to show"
+            description="Provision a VM to populate this chart."
+          />
+        } @else {
+          <canvas baseChart type="doughnut" [data]="statusChartData()" [options]="statusChartOptions"></canvas>
+        }
+      </div>
+    </article>
+
+    <article class="panel panel--chart panel--span-2">
+      <header class="panel__header">
+        <div>
+          <h2>Operating systems</h2>
+          <p>Most-used OS images in your fleet.</p>
+        </div>
+      </header>
+      <div class="panel__chart">
+        @if (vmStore.loading() && !vmStore.initialLoaded()) {
+          <div class="chart-loading"><app-loading-spinner /></div>
+        } @else if (!hasData()) {
+          <app-empty-state
+            icon="settings_input_component"
+            title="No operating systems yet"
+            description="Create VMs with different OS images to see breakdowns."
+          />
+        } @else {
+          <canvas baseChart type="bar" [data]="osChartData()" [options]="osChartOptions"></canvas>
+        }
+      </div>
+    </article>
+
+    <article class="panel">
+      <header class="panel__header">
+        <div>
+          <h2>Recent activity</h2>
+          <p>Latest provisioned VMs.</p>
+        </div>
+        <a class="panel__action" routerLink="/vms">View all<mat-icon>arrow_forward</mat-icon></a>
+      </header>
+      <div class="panel__list">
+        @if (vmStore.loading() && !vmStore.initialLoaded()) {
+          @for (i of [1,2,3]; track i) {
+            <div class="skeleton-row">
+              <app-skeleton width="40px" height="40px" radius="12px" />
+              <div class="skeleton-row__body">
+                <app-skeleton height="14px" width="70%" />
+                <app-skeleton height="10px" width="40%" />
+              </div>
+            </div>
+          }
+        } @else if (!recentVms().length) {
+          <app-empty-state
+            icon="cloud_off"
+            title="No virtual machines yet"
+            description="Create your first virtual machine to start tracking activity."
+          >
+            @if (auth.isAdmin()) {
+              <a mat-flat-button color="primary" routerLink="/vms/create">
+                <mat-icon>add</mat-icon>
+                Create VM
+              </a>
+            }
+          </app-empty-state>
+        } @else {
+          @for (vm of recentVms(); track vm.id) {
+            <app-vm-card [vm]="vm" [highlighted]="vmStore.highlightedId() === vm.id" />
+          }
+        }
+      </div>
+    </article>
+  </div>
+</section>

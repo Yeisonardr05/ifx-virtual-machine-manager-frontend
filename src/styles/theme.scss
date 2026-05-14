@@ -1,0 +1,35 @@
+@use '@angular/material' as mat;
+
+html {
+  @include mat.theme((
+    color: (
+      primary: mat.$violet-palette,
+      tertiary: mat.$blue-palette,
+      theme-type: dark,
+    ),
+    typography: (
+      plain-family: var(--font-sans),
+      brand-family: var(--font-sans),
+    ),
+    density: (
+      scale: -1,
+    ),
+  ));
+}
+
+html.theme-light {
+  @include mat.theme((
+    color: (
+      primary: mat.$violet-palette,
+      tertiary: mat.$blue-palette,
+      theme-type: light,
+    ),
+    typography: (
+      plain-family: var(--font-sans),
+      brand-family: var(--font-sans),
+    ),
+    density: (
+      scale: -1,
+    ),
+  ));
+}

@@ -1,0 +1,111 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+  background: var(--app-background);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  height: 100%;
+}
+
+body {
+  min-height: 100vh;
+  background-image:
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--brand-primary) 14%, transparent), transparent 45%),
+    radial-gradient(circle at 100% 100%, color-mix(in srgb, var(--brand-primary-soft) 12%, transparent), transparent 50%);
+  background-attachment: fixed;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+button { font-family: inherit; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--surface-3);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--brand-primary);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+.mat-typography {
+  font-family: var(--font-sans) !important;
+}
+
+.mat-mdc-form-field {
+  font-family: var(--font-sans) !important;
+}
+
+.mat-mdc-snack-bar-container.app-toast {
+  --mdc-snackbar-container-color: var(--surface-0);
+  --mdc-snackbar-supporting-text-color: var(--text-primary);
+
+  .mdc-snackbar__surface {
+    background: var(--surface-0) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-soft) !important;
+    border-radius: 14px !important;
+    box-shadow: var(--shadow-md) !important;
+    backdrop-filter: blur(16px);
+  }
+
+  &.app-toast--success .mdc-snackbar__surface {
+    border-left: 3px solid var(--color-success) !important;
+  }
+  &.app-toast--error .mdc-snackbar__surface {
+    border-left: 3px solid var(--color-danger) !important;
+  }
+  &.app-toast--warn .mdc-snackbar__surface {
+    border-left: 3px solid var(--color-warn) !important;
+  }
+  &.app-toast--info .mdc-snackbar__surface {
+    border-left: 3px solid var(--color-info) !important;
+  }
+}
+
+.app-dialog-panel .mat-mdc-dialog-surface {
+  background: var(--surface-0) !important;
+  border: 1px solid var(--border-soft) !important;
+  border-radius: 20px !important;
+  box-shadow: var(--shadow-lg) !important;
+  overflow: hidden;
+}
+
+.mat-mdc-menu-panel {
+  background: var(--surface-0) !important;
+  border: 1px solid var(--border-soft) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+.mat-mdc-menu-item {
+  color: var(--text-primary) !important;
+  font-family: var(--font-sans) !important;
+}
+
+.mat-mdc-tooltip .mdc-tooltip__surface {
+  background: var(--surface-3) !important;
+  color: var(--text-primary) !important;
+  border-radius: 8px !important;
+  font-family: var(--font-sans) !important;
+  font-size: 0.75rem !important;
+  padding: 6px 10px !important;
+}
+
+.mat-mdc-select-panel,
+.mat-mdc-autocomplete-panel {
+  background: var(--surface-0) !important;
+  border: 1px solid var(--border-soft) !important;
+  border-radius: 12px !important;
+}
+
+.mat-mdc-form-field .mat-mdc-text-field-wrapper {
+  border-radius: 12px !important;
+}

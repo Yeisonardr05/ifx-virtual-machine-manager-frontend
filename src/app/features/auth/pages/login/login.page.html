@@ -1,0 +1,120 @@
+<div class="login">
+  <div class="login__bg">
+    <div class="login__orb login__orb--a"></div>
+    <div class="login__orb login__orb--b"></div>
+    <div class="login__grid"></div>
+  </div>
+
+  <section class="login__hero">
+    <div class="login__brand">
+      <span class="brand-logo"><mat-icon>bolt</mat-icon></span>
+      <div>
+        <h1>VM Console</h1>
+        <p>Cloud-grade virtual machine management</p>
+      </div>
+    </div>
+
+    <ul class="login__features">
+      <li>
+        <span class="feature-dot"><mat-icon>speed</mat-icon></span>
+        <div>
+          <h3>Real-time orchestration</h3>
+          <p>Live state via native WebSockets (JSON events).</p>
+        </div>
+      </li>
+      <li>
+        <span class="feature-dot"><mat-icon>shield</mat-icon></span>
+        <div>
+          <h3>Secure by default</h3>
+          <p>HttpOnly cookies, role-based access control, CSRF-safe defaults.</p>
+        </div>
+      </li>
+      <li>
+        <span class="feature-dot"><mat-icon>bolt</mat-icon></span>
+        <div>
+          <h3>Optimistic UX</h3>
+          <p>Instant feedback with automatic rollback on failure.</p>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <section class="login__panel">
+    <div class="login__card">
+      <header class="login__card-header">
+        <h2>Welcome back</h2>
+        <p>Sign in to manage your virtual machines.</p>
+      </header>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" class="login__form" novalidate>
+        <mat-form-field appearance="outline" class="login__field">
+          <mat-label>Email</mat-label>
+          <input matInput formControlName="email" autocomplete="email" type="email" />
+          <mat-icon matSuffix>mail</mat-icon>
+          @if (emailError()) {
+            <mat-error>{{ emailError() }}</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="login__field">
+          <mat-label>Password</mat-label>
+          <input
+            matInput
+            formControlName="password"
+            autocomplete="current-password"
+            [type]="showPassword ? 'text' : 'password'"
+          />
+          <button
+            type="button"
+            matSuffix
+            mat-icon-button
+            (click)="togglePasswordVisibility()"
+            [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
+          >
+            <mat-icon>{{ showPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+          @if (passwordError()) {
+            <mat-error>{{ passwordError() }}</mat-error>
+          }
+        </mat-form-field>
+
+        <button
+          mat-flat-button
+          color="primary"
+          type="submit"
+          class="login__submit"
+          [disabled]="loading()"
+        >
+          @if (loading()) {
+            <app-loading-spinner [size]="22" />
+          } @else {
+            <span class="login__submit-content">
+              <span>Sign in</span>
+              <mat-icon>arrow_forward</mat-icon>
+            </span>
+          }
+        </button>
+      </form>
+
+      <div class="login__demo">
+        <span class="login__demo-label">Demo accounts</span>
+        <div class="login__demo-buttons">
+          @for (account of demoAccounts; track account.email) {
+            <button
+              type="button"
+              class="demo-chip"
+              (click)="fillAccount(account.email, account.password)"
+            >
+              <span class="demo-chip__role">{{ account.label }}</span>
+              <span class="demo-chip__email">{{ account.email }}</span>
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+
+    <footer class="login__footer">
+      Crafted with Angular Signals · WebSockets · Material 3
+    </footer>
+  </section>
+</div>

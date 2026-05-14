@@ -1,0 +1,93 @@
+<section class="vm-list">
+  <header class="vm-list__header">
+    <div>
+      <span class="vm-list__eyebrow">Fleet</span>
+      <h1>Virtual machines</h1>
+      <p>Manage every VM in your environment, with real-time updates.</p>
+    </div>
+    <div class="vm-list__actions">
+      <button mat-stroked-button type="button" (click)="refresh()" [disabled]="vmStore.loading()">
+        <mat-icon>refresh</mat-icon>
+        <span>Refresh</span>
+      </button>
+      @if (auth.isAdmin()) {
+        <a mat-flat-button color="primary" routerLink="/vms/create">
+          <mat-icon>add</mat-icon>
+          <span>New VM</span>
+        </a>
+      }
+    </div>
+  </header>
+
+  <app-vm-filters />
+
+  <div class="vm-list__summary">
+    <span>
+      Showing <strong>{{ vmStore.filteredVms().length }}</strong>
+      of <strong>{{ vmStore.totalCount() }}</strong> VMs
+    </span>
+    <span class="vm-list__legend">
+      <span class="dot dot--success"></span>{{ vmStore.runningCount() }} running
+      <span class="dot dot--warn"></span>{{ vmStore.pausedCount() }} paused
+      <span class="dot dot--danger"></span>{{ vmStore.stoppedCount() }} stopped
+    </span>
+  </div>
+
+  @if (vmStore.loading() && !vmStore.initialLoaded()) {
+    <div class="vm-grid">
+      @for (placeholder of placeholders; track $index) {
+        <div class="skeleton-card">
+          <div class="skeleton-card__top">
+            <app-skeleton width="44px" height="44px" radius="14px" />
+            <div class="skeleton-card__title">
+              <app-skeleton height="14px" width="60%" />
+              <app-skeleton height="10px" width="40%" />
+            </div>
+          </div>
+          <div class="skeleton-card__row">
+            <app-skeleton height="12px" width="80%" />
+            <app-skeleton height="12px" width="80%" />
+            <app-skeleton height="12px" width="80%" />
+          </div>
+          <app-skeleton height="10px" width="40%" />
+        </div>
+      }
+    </div>
+  } @else if (!vmStore.totalCount()) {
+    <app-empty-state
+      icon="cloud_off"
+      title="No virtual machines yet"
+      description="Provision your first VM to start managing your cloud infrastructure."
+    >
+      @if (auth.isAdmin()) {
+        <a mat-flat-button color="primary" routerLink="/vms/create">
+          <mat-icon>add</mat-icon>
+          Create VM
+        </a>
+      }
+    </app-empty-state>
+  } @else if (!vmStore.filteredVms().length) {
+    <app-empty-state
+      icon="filter_alt_off"
+      title="No matches"
+      description="No VMs match the current filters. Try adjusting them."
+    >
+      <button mat-stroked-button type="button" (click)="clearFilters()">
+        <mat-icon>refresh</mat-icon>
+        Clear filters
+      </button>
+    </app-empty-state>
+  } @else {
+    <div class="vm-grid">
+      @for (vm of vmStore.filteredVms(); track vm.id) {
+        <app-vm-card
+          [vm]="vm"
+          [canManage]="auth.isAdmin()"
+          [highlighted]="vmStore.highlightedId() === vm.id"
+          (edit)="onEdit($event)"
+          (remove)="onRemove($event)"
+        />
+      }
+    </div>
+  }
+</section>
