@@ -15,6 +15,11 @@ import { credentialsInterceptor } from './core/interceptors/credentials.intercep
 import { errorInterceptor } from './core/interceptors/error.interceptor';
 import { AuthStore } from './store/auth.store';
 
+/** Exported for unit tests and explicit bootstrap contract. */
+export function sessionHydrateInitializer(): void {
+  inject(AuthStore).hydrateSession().subscribe();
+}
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
@@ -30,9 +35,7 @@ export const appConfig: ApplicationConfig = {
     // Do not block bootstrap on this request: if GET /vms hangs, the app never mounted and the UI stayed
     // on a blank dark shell (only index.html styles). Navigation from interceptors during a blocking
     // initializer can also leave the router in a bad state.
-    provideAppInitializer(() => {
-      inject(AuthStore).hydrateSession().subscribe();
-    }),
+    provideAppInitializer(sessionHydrateInitializer),
     provideCharts(withDefaultRegisterables()),
   ],
 };
